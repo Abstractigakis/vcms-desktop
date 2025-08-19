@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>AIVCMS - Select Vault</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <div class="header">
+      <div class="logo">AIVCMS</div>
+      <div class="subtitle">Select a vault to get started</div>
+    </div>
+
+    <div class="main-content">
+      <div class="vault-actions">
+        <div class="action-section">
+          <div class="section-title">Quick start</div>
+
+          <button class="action-button" onclick="createNewVault()">
+            <svg class="icon" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z" />
+            </svg>
+            <div class="content">
+              <div class="title">Create new vault</div>
+              <div class="description">Start fresh with a new .vcms vault</div>
+            </div>
+          </button>
+
+          <button class="action-button" onclick="openFolderAsVault()">
+            <svg class="icon" viewBox="0 0 24 24" fill="currentColor">
+              <path
+                d="M10 4H4c-1.11 0-2 .89-2 2v12c0 1.11.89 2 2 2h16c1.11 0 2-.89 2-2V8c0-1.11-.89-2-2-2h-8l-2-2z"
+              />
+            </svg>
+            <div class="content">
+              <div class="title">Open folder as vault</div>
+              <div class="description">Use an existing folder as a vault</div>
+            </div>
+          </button>
+
+          <button class="action-button" onclick="openExistingVault()">
+            <svg class="icon" viewBox="0 0 24 24" fill="currentColor">
+              <path
+                d="M20 6h-2.18c.11-.31.18-.65.18-1a2.996 2.996 0 0 0-5.5-1.65l-.5.67-.5-.68C10.96 2.54 10.05 2 9 2 7.34 2 6 3.34 6 5c0 .35.07.69.18 1H4c-1.11 0-2 .89-2 2v11c0 1.11.89 2 2 2h16c1.11 0 2-.89 2-2V8c0-1.11-.89-2-2-2z"
+              />
+            </svg>
+            <div class="content">
+              <div class="title">Open existing vault</div>
+              <div class="description">Browse for a .vcms vault folder</div>
+            </div>
+          </button>
+        </div>
+      </div>
+
+      <div class="recent-vaults">
+        <div class="section-title">Recent vaults</div>
+        <div class="vault-list" id="vaultList">
+          <div class="empty-state">
+            <svg class="icon" viewBox="0 0 24 24" fill="currentColor">
+              <path
+                d="M10 4H4c-1.11 0-2 .89-2 2v12c0 1.11.89 2 2 2h16c1.11 0 2-.89 2-2V8c0-1.11-.89-2-2-2h-8l-2-2z"
+              />
+            </svg>
+            <div>No recent vaults</div>
+            <div style="margin-top: 8px; font-size: 11px">
+              Your recently opened vaults will appear here
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="footer">
+      AIVCMS v1.0.0 - AI-Powered Vault Content Management System
+    </div>
+
+    <script>
+      const { ipcRenderer } = require("electron");
+
+      let recentVaults = [];
+
+      async function loadRecentVaults() {
+        try {
+          console.log("Loading recent vaults...");
+          recentVaults = await ipcRenderer.invoke("get-recent-vaults");
+          console.log("Loaded recent vaults:", recentVaults);
+          renderVaults();
+        } catch (error) {
+          console.error("Error loading recent vaults:", error);
+        }
+      }
+
+      async function createNewVault() {
+        console.log("Creating new vault...");
+
+        try {
+          const result = await ipcRenderer.invoke("create-new-vault");
+          console.log("Create vault result:", result);
+
+          if (result.success) {
+            console.log("Vault created successfully:", result.path);
+            await loadRecentVaults();
+            await openVault(result.path);
+          } else if (!result.canceled) {
+            alert("Error creating vault: " + (result.error || "Unknown error"));
+          }
+        } catch (error) {
+          console.error("Error creating vault:", error);
+          alert("Error creating vault: " + error.message);
+        }
+      }
+
+      async function openFolderAsVault() {
+        console.log("Opening folder as vault...");
+
+        try {
+          const result = await ipcRenderer.invoke("open-folder-as-vault");
+          console.log("Open folder result:", result);
+
+          if (result.success) {
+            console.log("Folder opened as vault successfully:", result.path);
+            await loadRecentVaults();
+            await openVault(result.path);
+          } else if (!result.canceled) {
+            alert(
+              "Error opening folder as vault: " +
+                (result.error || "Unknown error")
+            );
+          }
+        } catch (error) {
+          console.error("Error opening folder as vault:", error);
+          alert("Error opening folder as vault: " + error.message);
+        }
+      }
+
+      async function openExistingVault() {
+        console.log("Opening existing vault...");
+
+        try {
+          const result = await ipcRenderer.invoke("open-existing-vault");
+          console.log("Open existing vault result:", result);
+
+          if (result.success) {
+            console.log("Existing vault opened successfully:", result.path);
+            await loadRecentVaults();
+            await openVault(result.path);
+          } else if (!result.canceled) {
+            alert(
+              "Error opening existing vault: " +
+                (result.error || "Unknown error")
+            );
+          }
+        } catch (error) {
+          console.error("Error opening existing vault:", error);
+          alert("Error opening existing vault: " + error.message);
+        }
+      }
+
+      async function openVault(vaultPath) {
+        console.log("Opening vault:", vaultPath);
+
+        try {
+          const result = await ipcRenderer.invoke("open-vault", vaultPath);
+          if (!result.success) {
+            alert("Error opening vault: " + (result.error || "Unknown error"));
+            await loadRecentVaults();
+          }
+        } catch (error) {
+          console.error("Error opening vault:", error);
+          alert("Error opening vault: " + error.message);
+        }
+      }
+
+      function renderVaults() {
+        const vaultList = document.getElementById("vaultList");
+
+        if (recentVaults.length === 0) {
+          vaultList.innerHTML = `
+            <div class="empty-state">
+              <svg class="icon" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M10 4H4c-1.11 0-2 .89-2 2v12c0 1.11.89 2 2 2h16c1.11 0 2-.89 2-2V8c0-1.11-.89-2-2-2h-8l-2-2z"/>
+              </svg>
+              <div>No recent vaults</div>
+              <div style="margin-top: 8px; font-size: 11px;">Your recently opened vaults will appear here</div>
+            </div>
+          `;
+          return;
+        }
+
+        vaultList.innerHTML = recentVaults
+          .map(
+            (vault) => `
+          <div class="vault-item" onclick="openVault('${vault.path.replace(
+            /'/g,
+            "\\'"
+          )}')">
+            <svg class="vault-icon" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M10 4H4c-1.11 0-2 .89-2 2v12c0 1.11.89 2 2 2h16c1.11 0 2-.89 2-2V8c0-1.11-.89-2-2-2h-8l-2-2z"/>
+            </svg>
+            <div class="vault-info">
+              <div class="vault-name">${vault.name}</div>
+              <div class="vault-path">${vault.path}</div>
+            </div>
+          </div>
+        `
+          )
+          .join("");
+      }
+
+      // Initialize the app
+      document.addEventListener("DOMContentLoaded", () => {
+        console.log("DOM loaded, loading recent vaults...");
+        loadRecentVaults();
+      });
+    </script>
+  </body>
+</html>
